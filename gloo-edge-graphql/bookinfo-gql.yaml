@@ -1,0 +1,96 @@
+apiVersion: graphql.gloo.solo.io/v1alpha1
+kind: GraphQLSchema
+metadata:
+  name: bookinfo-graphql
+  namespace: gloo-system
+spec:
+  executableSchema:
+    executor:
+      local:
+        enableIntrospection: true
+        resolutions:
+          Query|productsForHome:
+            restResolver:
+              request:
+                headers:
+                  :method: GET
+                  :path: /api/v1/products
+              upstreamRef:
+                name: default-productpage-9080
+                namespace: gloo-system
+          author:
+            restResolver:
+              request:
+                headers:
+                  :method: GET
+                  :path: /details/{$parent.id}
+              response:
+                resultRoot: "author"
+              upstreamRef:
+                name: default-details-9080
+                namespace: gloo-system
+          pages:
+            restResolver:
+              request:
+                headers:
+                  :method: GET
+                  :path: /details/{$parent.id}
+              response:
+                resultRoot: "pages"
+              upstreamRef:
+                name: default-details-9080
+                namespace: gloo-system
+          year:
+            restResolver:
+              request:
+                headers:
+                  :method: GET
+                  :path: /details/{$parent.id}
+              response:
+                resultRoot: "year"
+              upstreamRef:
+                name: default-details-9080
+                namespace: gloo-system
+          review:
+            restResolver:
+              request:
+                headers:
+                  :method: GET
+                  :path: /reviews/{$parent.id}
+              response:
+                resultRoot: "reviews"
+              upstreamRef:
+                name: default-reviews-9080
+                namespace: gloo-system
+
+    schemaDefinition: |
+      type Query {
+        """Description of a book in HTML"""
+        productsForHome: [Product] @resolve(name: "Query|productsForHome")
+      }
+      
+      """Each book has a product entry"""
+      type Product {
+        """Unique identifier for books"""
+      id: String
+      """The book title"""
+      title: String
+      """Description of a book in HTML"""
+      descriptionHtml: String
+      """Author of the book"""
+      author: String @resolve(name: "author")
+      """Total number of pages in the book"""
+      pages: Int @resolve(name: "pages")
+      """Year of original publication"""
+      year: Int @resolve(name: "year")
+      """List of reader reviews for this book"""
+      review: [Review] @resolve(name: "review")
+      }
+
+      """A book review"""
+      type Review {
+          """Name of the reviewer"""
+          reviewer: String
+          """Review details"""
+          text: String
+      }
