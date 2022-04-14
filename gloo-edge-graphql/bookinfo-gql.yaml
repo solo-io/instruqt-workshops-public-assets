@@ -1,4 +1,4 @@
-apiVersion: graphql.gloo.solo.io/v1
+apiVersion: graphql.gloo.solo.io/v1beta1
 kind: GraphQLApi
 metadata:
   name: bookinfo-graphql
@@ -62,13 +62,26 @@ spec:
               upstreamRef:
                 name: default-reviews-9080
                 namespace: gloo-system
-
+          ratings:
+            restResolver:
+              request:
+                headers:
+                  :method: GET
+                  :path: /ratings/{$parent.id}
+              response:
+                resultRoot: "ratings[*]"
+                setters:
+                  reviewer: "{$body[*][0]}"
+                  numStars: "{$body[*][1]}"
+              upstreamRef:
+                name: default-ratings-9080
+                namespace: gloo-system
     schemaDefinition: |
       type Query {
         """Description of a book in HTML"""
         productsForHome: [Product] @resolve(name: "Query|productsForHome")
       }
-      
+
       """Each book has a product entry"""
       type Product {
         """Unique identifier for books"""
@@ -85,6 +98,8 @@ spec:
       year: Int @resolve(name: "year")
       """List of reader reviews for this book"""
       reviews: [Review] @resolve(name: "review")
+      """List of reader ratings for this book"""
+      ratings: [Rating] @resolve(name: "ratings")
       }
 
       """A book review"""
@@ -93,4 +108,12 @@ spec:
           reviewer: String
           """Review details"""
           text: String
+      }
+
+      """A book rating"""
+      type Rating {
+          """Name of the user peforming the rating"""
+          reviewer: String
+          """Number of stars for this rating"""
+          numStars: Int
       }
